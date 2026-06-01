@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # ======================================
+  # LAYER OF DEVELOPED CENTER (IDE)
+  # ======================================    
+  development-ide:
+    image: gitpod/openvscode-server:latest
+    container_name: stealth_vscodium
+    ports: 
+      - "127.0.0.1:8443:3000"
+    volumes:
+      - ./infrastructure/work_data/work:/home/workspace
+      - ./infrastructure/work_data/vscode_config:/home/.openvscode-server/data
+    environment:
+      - OPENVSCODE_SERVER_HOST=0.0.0.0 
+      - OPENVSCODE_SERVER_CONNECTION__TOKEN={TOKEN_PASSWORD}
+    networks:
+      - stealth_net
+    restart: unless-stopped
+
+  # ========================================
+  # LAYER OF SIMULATION AND LOCAL BLOCKCHAIN
+  # ========================================
+  foundry-toolkit:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: stealth_foundry
+    user: "${USER_UID}:${USER_GID}"
+    cap_drop:
+      - ALL
+    volumes:
+      - ./infrastructure/work_data/work:/app
+    entrypoint: ["tail", "-f", "/dev/null"]
+    ports:
+      - "127.0.0.1:8545:8545" # Mapeado a localhost por seguridad (OpSec)
+    networks:
+      - stealth_net
+    restart: unless-stopped
+    
+  # ===========================================
+  # LAYER OF AUDITORY AND ANALYTICS OF SECURITY
+  # ===========================================  
+  security-toolkit:
+    image: trailofbits/eth-security-toolbox
+    container_name: stealth_audit
+    user: "${USER_UID}:${USER_GID}"
+    cap_drop:
+      - ALL
+    environment:
+      - SOLC_SHARE_PATH=/tmp/.solc  #move the cache of solc to sure temporal zone
+      - SLITHER_CONFIG_PATH=/tmp    #avoid try write settings in the root 
+    volumes:
+      - ./infrastructure/work_data/work:/share/work
+      #IDENTITY different to I have not found
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+    tty: true
+    stdin_open: true
+    networks:
+      - stealth_net  
+    restart: unless-stopped
+
+networks:
+  stealth_net:
+    driver: bridge

@@ -1,0 +1,45 @@
+# =====================================================================
+# STEALTHOPS OBFUSCATION & OPSEC POLICIES (.gitignore)
+# =====================================================================
+
+# 1. Environment Secrets & Local Hyper-parameters
+.env
+.env.local
+*.old
+*.log
+
+#Prevent SSH keys and configuration leaks
+.ssh/
+**/ .ssh/
+id_rsa*
+id_ed25519*
+known_hosts
+authorized_keys
+
+#other files
+**/work_data/git_initial.txt
+**/work_data/SimpleDAO.sol
+
+# change rule specify .txt 
+*secret*.txt
+scratchpad.txt
+
+# 2. Complete Infrastructure Box Isolation (Black Box Policy)
+# This completely blocks local browser caches, sessions, databases, and private code.
+infrastructure/brave_data/
+infrastructure/work_data/webconfig/
+infrastructure/vscode_config/
+infrastructure/work_data/work/
+
+# 3. Whitelist Structural Integrity
+# Allow tracking of the empty directory tree structural milestones
+!infrastructure/brave_data/.gitkeep
+!infrastructure/work_data/webconfig/.gitkeep
+!infrastructure/vscode_config/.gitkeep
+!infrastructure/work_data/work/.gitkeep
+
+# 4. don't ignore files
+!.gitignore
+!Makefile
+!stealthops.sh
+!docker-compose.yml
