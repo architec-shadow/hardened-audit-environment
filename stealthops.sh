@@ -11,7 +11,7 @@ set -eo pipefail
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 #load enviorement variables without injection and dataleaks
-if [ -f "$BASIC_DIR/.env" ];then
+if [ -f "$BASE_DIR/.env" ];then
     #available automatic export of assign variables
     set -a
     source "$BASE_DIR/.env"
@@ -57,9 +57,20 @@ turnoff_all() {
 }
 
 up_docker() {
-    echo "[*] Deploying DevSecOps Backend (VS Codium, Foundry, Slither)..."
+    echo "[*] Deploying DevSecOps Backend (VS Codium, Anvil, Foundry, Slither)..."
     cd "$BASE_DIR" && docker compose up -d
+    #fast verify  of local node  to OpSec internal
+    echo "[*] Awaiting  local simulation node consensus (Anvil)..."
+    sleep 2
+    if curl -s -X POST -H "Content-Type: application/json" \
+    	--data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
+    	http://127.0.0.1:8545 > /dev/null; then
+    	echo "{+] Local simulation node sucessfully running on http://127.0.0.1:8545"
+    else
+    	echo "[!] Warning: Simulation node did not respond on local port 8545."
+    fi
 }
+
 
 # Flags of high hardering to Chronium
 # --disable-encryption-assets: without telemetry and keys of operating system host
