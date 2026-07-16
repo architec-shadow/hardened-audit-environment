@@ -20,19 +20,35 @@ services:
     restart: unless-stopped
 
   # ========================================
+  # LAYER OF SIMULATION (ANVIL NODE)
+  # =======================================
+  stealth-anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: stealth_anvil
+    platform: linux/amd64
+    ports:
+      - "127.0.0.1:8545:8545"
+    entrypoint: ["anvil", "--host", "0.0.0.0"]
+    networks:
+      - stealth_net
+    restart: unless-stopped
+
+  # ========================================
   # LAYER OF SIMULATION AND LOCAL BLOCKCHAIN
   # ========================================
   foundry-toolkit:
     image: ghcr.io/foundry-rs/foundry:latest
     container_name: stealth_foundry
+    platform: linux/amd64
     user: "${USER_UID}:${USER_GID}"
     cap_drop:
       - ALL
     volumes:
       - ./infrastructure/work_data/work:/app
+    working_dir: /app
     entrypoint: ["tail", "-f", "/dev/null"]
-    ports:
-      - "127.0.0.1:8545:8545" # Mapeado a localhost por seguridad (OpSec)
+    depends_on:
+      - stealth-anvil
     networks:
       - stealth_net
     restart: unless-stopped
