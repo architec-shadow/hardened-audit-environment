@@ -1,81 +1,211 @@
-version: '3.8'
+version '3.8'
+# ================================================
+# LAYER OF DEVELOPMENT CENTER (IDE)
+# ===============================================
+development-ide:
+  image: gitpod/openvscode-server:latest
+  container-name: stealth_vscodium
+  user: "${USER_UID:-1000}:${USER_GID:-1000}"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  ports:
+    - "127.0.0.1:8443:3000"
+  volumes:
+    - ./infraestructure/work_data/work:/workspace:rw
+    - ./infraestructure/work_data/vscode_config:/home/openvscode-server/.openvscode-server:rw
+    - ts_node_modules:/workspace/node_modules #sincronizado con el IDE
+  environment:
+    - OPENVSCODE_SERVER_HOST=0.0.0.0
+    - OPENVSCODE_SERVER_CONNECTION_TOKEN=${TOKEN_PASSWORD:?Error: TOKEN_PASSWORD no definida}
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 4096M
+  networks:
+    - stealth_egress
+    - stealth_internal
+  restart: unless-stopped
 
-services:
-  # ======================================
-  # LAYER OF DEVELOPED CENTER (IDE)
-  # ======================================    
-  development-ide:
-    image: gitpod/openvscode-server:latest
-    container_name: stealth_vscodium
-    ports: 
-      - "127.0.0.1:8443:3000"
-    volumes:
-      - ./infrastructure/work_data/work:/home/workspace
-      - ./infrastructure/work_data/vscode_config:/home/.openvscode-server/data
-    environment:
-      - OPENVSCODE_SERVER_HOST=0.0.0.0 
-      - OPENVSCODE_SERVER_CONNECTION__TOKEN={TOKEN_PASSWORD}
-    networks:
-      - stealth_net
-    restart: unless-stopped
+# =================================================
+# LAYER OF SIMULATION (ANVIL NODE)
+# =================================================
+stealth-anvil:
+  image: ghcr.io/foundry-rs/foundry:latest
+  container_name: stealth_anvil
+  platform: linux/amd64
+  user: "${USER_UID:-1000}:{USER_GID:-1000}"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  ports:
+    - "127.0.0.1:8545:8545"
+  entrypoint: ["anvil", "--host", "0.0.0.0"]
+  healthcheck:
+    test: ["CMD-SHELL", "cast block-number --rpc-url http://127.0.0.1:8545 || exit 1"]
+    interval: 5s
+    timeout: 3s
+    retries: 5
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 2048M
+  networks:
+    - stealth_internal
+  restart: unless-stopped
+# =====================================================
+# LAYER OF SIMULATION AND LOCAL BLOCKCHAIN (CLI RUNNER)
+# =====================================================
+foundry-toolkit:
+  image: ghcr.io/foundry-rs/foundry:latest
+  container_name: stealth_foundry
+  platform: linux/amd64
+  user: "${USER_UID:-1000}:${USER_GID:-1000}"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  volumes:
+    - ./infraestructure/work_data/work:/workspace:rw
+    - foundry_svm_cache:/home/foundry/.svm # Persistencia de versiones solc
+  working_dir: /workspace
+  entrypoint: ["tail", "-f", "/dev/null"]
+  tty: true
+  stdin_open: true
+  depends_on:
+    stealth-anvil:
+      condition: service_healthy
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 4096M
+  networks:
+    - stealth_egress
+    - stealth_internal
+  restart: unless-stopped
 
-  # ========================================
-  # LAYER OF SIMULATION (ANVIL NODE)
-  # =======================================
-  stealth-anvil:
-    image: ghcr.io/foundry-rs/foundry:latest
-    container_name: stealth_anvil
-    platform: linux/amd64
-    ports:
-      - "127.0.0.1:8545:8545"
-    entrypoint: ["anvil", "--host", "0.0.0.0"]
-    networks:
-      - stealth_net
-    restart: unless-stopped
+# =====================================================
+# MODULARIZED FUZZING, TESTING & COMPILATION LAYERS
+# ====================================================
 
-  # ========================================
-  # LAYER OF SIMULATION AND LOCAL BLOCKCHAIN
-  # ========================================
-  foundry-toolkit:
-    image: ghcr.io/foundry-rs/foundry:latest
-    container_name: stealth_foundry
-    platform: linux/amd64
-    user: "${USER_UID}:${USER_GID}"
-    cap_drop:
-      - ALL
-    volumes:
-      - ./infrastructure/work_data/work:/app
-    working_dir: /app
-    entrypoint: ["tail", "-f", "/dev/null"]
-    depends_on:
-      - stealth-anvil
-    networks:
-      - stealth_net
-    restart: unless-stopped
-    
-  # ===========================================
-  # LAYER OF AUDITORY AND ANALYTICS OF SECURITY
-  # ===========================================  
-  security-toolkit:
-    image: trailofbits/eth-security-toolbox
-    container_name: stealth_audit
-    user: "${USER_UID}:${USER_GID}"
-    cap_drop:
-      - ALL
-    environment:
-      - SOLC_SHARE_PATH=/tmp/.solc  #move the cache of solc to sure temporal zone
-      - SLITHER_CONFIG_PATH=/tmp    #avoid try write settings in the root 
-    volumes:
-      - ./infrastructure/work_data/work:/share/work
-      #IDENTITY different to I have not found
-      - /etc/passwd:/etc/passwd:ro
-      - /etc/group:/etc/group:ro
-    tty: true
-    stdin_open: true
-    networks:
-      - stealth_net  
-    restart: unless-stopped
+# Compilador y Ejecutor de Tests en Rust
+rust-suite:
+  image: rust:1.78-slim
+  container_name: stealth_rust
+  user: "${USER_UID:-1000}:${USER_GID:-1000}"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  environment:
+    - CARGO_HOME=/cargo_cache
+    - CARGO_TARGET_DIR=/cargo_target
+  volumes:
+    - ./infraestructure/work_data/work:/workspace:rw
+    - rust_cargo_cache:/cargo_cache
+    - rust_target_cache:/cargo_target
+  working_dir: /workspace
+  entrypoint: ["tails", "-f", "/dev/null"]
+  tty:true
+  stdin_open: true
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 4096M
+  networks:
+    - stealth_egress
+    - stealth_internal
+  restart: unless-stopped
 
+# Entorno de Typescript y Node.js
+typescript-suite:
+  image: node:20-slim
+  container_name: stealth_typescript
+  user: "${USER_UID:-1000}:${USER_GID:-1000}"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  environment:
+    - NPM_CONFIG_PREFIX=/tmp/.npm-global
+  volumes:
+    - ./infraestructure/work_data/work:/workspace:rw
+    - ts_node_modules:/workspace/node_modules
+  working_dir: /workspace
+  entrypoint: ["tail", "-f", "/dev/null"]
+  tty: true
+  stdin_open: true
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 4096M
+  networks:
+    - stealth_egress
+    - stealth_internal
+  restart: unless-stopped
+
+#Fuzzer 1: Echidna (Aisaldo de Internet=
+echidna-fuzzer:
+  image: ghcr.io/crytic/echidna/echidna:latest
+  container_name: stealth_echidna
+  user: "${USER_UID:-1000}:${USER_GID:-1000}"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new.privileges:true
+  volumes:
+    - ./infraestructure/work_data/work:/workspace:rw
+  working_dir: /workspace
+  entrypoint: ["tail", "-f", "/dev/null"]
+  tty: true
+  stdin_open: true
+  depends_on:
+    stealth-anvil:
+      condition: service_healthy
+  networks:
+    - stealth_internal
+  restart: unless-stopped
+
+#Fuzzer 2: Medusa (Aislado de Internet)
+medusa-fuzzer:
+  image: ghcr.io/crytic/medusa:latest
+  container_name: stealth_medusa
+  user: "${USER_UID:-1000}:${USER_GID:-1000}"
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  volumes:
+    - ./infraestructure/work_data/work:/workspace:rw
+  working_dir: /workspace
+  entrypoint: ["tail", "-f", "/dev/null"]
+  tty: true
+  stding_open: true
+  depends_on:
+    stealth-anvil:
+      condition: service_healthy
+  networks:
+    - stealth_internal
+  restart: unless-stopped
+
+#Redes Segmentadas:
 networks:
-  stealth_net:
+  stealth_egress:
     driver: bridge
+  stealth_internal:
+    driver: bridge
+    internal: true
+
+# Volumenes nombrados (Gestionados por Docker)
+volumes:
+  rust_cargo_cache:
+  rust_target_cache:
+  ts_node_modules:
+  foundry_svm_cache:
