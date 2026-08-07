@@ -29,7 +29,7 @@ scratchpad.txt
 infrastructure/brave_data/
 infrastructure/work_data/webconfig/
 infrastructure/vscode_config/
-infrastructure/work_data/work/
+infrastructure/work_data/work/*
 
 # 3. Whitelist Structural Integrity
 # Allow tracking of the empty directory tree structural milestones
@@ -37,6 +37,11 @@ infrastructure/work_data/work/
 !infrastructure/work_data/webconfig/.gitkeep
 !infrastructure/vscode_config/.gitkeep
 !infrastructure/work_data/work/.gitkeep
+
+# Exception to can the submodules of work
+!**/work_data/work/architec-shadow
+!**/work_data/work/arbitrage_web3-htf-system
+!**/work_data/work/DeFi-Security-Portafolio
 
 # 4. don't ignore files
 !.gitignore

@@ -1,0 +1,10 @@
+
+[submodule "infrastructure/work_data/work/arbitrage_web3-htf-system"]
+	path = infrastructure/work_data/work/arbitrage_web3-htf-system
+	url = https://github/architec-shadow/arbitrage_web3-htf-system.git
+[submodule "infrastructure/work_data/work/architec-shadow"]
+	path = infrastructure/work_data/work/architec-shadow
+	url = https://github/architec-shadow/web3-security-toolkit.git
+[submodule "infrastructure/work_data/work/DeFi-Security-Portafolio"]
+	path = infrastructure/work_data/work/DeFi-Security-Portafolio
+	url = https://github/architec-shadow/challenge_solution_defi.git
