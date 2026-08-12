@@ -208,22 +208,23 @@ show_status() {
 # 'rm' borra los punteros de los archivos pero deja los bytes intactos en la RAM.
 # Esta función utiliza 'shred' (o truncamiento en cascada) para llenar los datos
 # con bytes aleatorios y ceros antes de eliminar las entradas del sistema de archivos.
+# recomendacion aplicar esta funcion para discos fisicos (ssd y hdd) no en ram
 # ---------------------------------------------------------------------
-purge_directory() {
-    local dir="$1"
-    if [ -n "$dir" ] && [ "$dir" != "/" ] && [ -d "$dir" ]; then
-        echo "[*] Destruyendo datos con sobreescritura aleatoria en $dir..."
-        if command -v shred >/dev/null 2>&1; then
-            # Sobreescritura aleatoria + paso final con ceros + eliminación
-            sudo find "$dir" -type f -exec shred -u -n 1 -z {} + 2>/dev/null || true
-        else
-            # Método alternativo: truncado a cero bytes en caso de ausencia de shred
-            sudo find "$dir" -type f -exec truncate -s 0 {} + 2>/dev/null || true
-        fi
-        # Limpieza residual de directorios vacíos
-        sudo find "$dir" -mindepth 1 -delete 2>/dev/null || sudo find "$dir" -mindepth 1 -exec rm -rf {} + 2>/dev/null || true
-    fi
-}
+# purge_directory() {
+#    local dir="$1"
+#    if [ -n "$dir" ] && [ "$dir" != "/" ] && [ -d "$dir" ]; then
+#        echo "[*] Destruyendo datos con sobreescritura aleatoria en $dir..."
+#        if command -v shred >/dev/null 2>&1; then
+#            # Sobreescritura aleatoria + paso final con ceros + eliminación
+#            sudo find "$dir" -type f -exec shred -u -n 1 -z {} + 2>/dev/null || true
+#        else
+#            # Método alternativo: truncado a cero bytes en caso de ausencia de shred
+#            sudo find "$dir" -type f -exec truncate -s 0 {} + 2>/dev/null || true
+#        fi
+#        # Limpieza residual de directorios vacíos
+#        sudo find "$dir" -mindepth 1 -delete 2>/dev/null || sudo find "$dir" -mindepth 1 -exec rm -rf {} + 2>/dev/null || true
+#    fi
+#}
 
 # ---------------------------------------------------------------------
 # DIRECTRIZ OPSEC 8: ORDEN DE DESMANTELAMIENTO Y PURGA DEL KERNEL
@@ -250,9 +251,9 @@ turnoff_all() {
         sudo fuser -k -9 "$DIR_PRODUCTION" > /dev/null 2>&1 || true
     fi
 
-    echo "[*] Ejecutando sobreescritura forense previa al desmontaje..."
-    purge_directory "$DIR_FINANCE"
-    purge_directory "$DIR_PRODUCTION"
+    #echo "[*] Ejecutando sobreescritura forense previa al desmontaje..."
+    #purge_directory "$DIR_FINANCE"
+    #purge_directory "$DIR_PRODUCTION"
 
     echo "[*] Desmantelando infraestructura Docker y red de contenedores..."
     (cd "$BASE_DIR" && docker compose down --volumes --remove-orphans)
@@ -265,9 +266,9 @@ turnoff_all() {
         sudo umount -f "$DIR_PRODUCTION" 2>/dev/null || sudo umount -l "$DIR_PRODUCTION" 2>/dev/null
     fi
 
-    echo "[*] Purga secundaria tras desmontaje..."
-    purge_directory "$DIR_FINANCE"
-    purge_directory "$DIR_PRODUCTION"
+    #echo "[*] Purga secundaria tras desmontaje..."
+    #purge_directory "$DIR_FINANCE"
+    #purge_directory "$DIR_PRODUCTION"
 
     # Forzar sincronización de discos y vaciado de caché de memoria en Kernel
     echo "[*] Purgando cachés de memoria RAM (PageCache/Dentries) en el Host..."
