@@ -135,45 +135,24 @@ BRAVE_HARDENED_FLAGS=(
 # FUNCIONES OPERATIVAS
 # ---------------------------------------------------------------------
 
-verify_anvil() {
-    echo "[*] Verificando consenso del nodo Anvil (RPC http://127.0.0.1:8545)..."
-    local retries=5
-    local wait_sec=2
-    while [ $retries -gt 0 ]; do
-        if curl -s -X POST -H "Content-Type: application/json" \
-            --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
-            http://127.0.0.1:8545 > /dev/null; then
-            echo "[+] Nodo Anvil respondiendo correctamente en http://127.0.0.1:8545"
-            return 0
-        fi
-        ((retries--))
-        [ $retries -gt 0 ] && sleep $wait_sec
-    done
-    echo "[!] Advertencia: El nodo Anvil no respondió en el puerto 8545 tras varios intentos."
-}
-
 up_core() {
     echo "[*] Desplegando Backend CORE (VSCodium, Anvil Node, Foundry CLI)..."
-    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d "${CORE_SERVICES[@]}")
-    verify_anvil
+    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d --wait "${CORE_SERVICES[@]}")
 }
 
 up_dev() {
     echo "[*] Desplegando Backend DEV (CORE + Suites Rust & TypeScript)..."
-    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d "${DEV_SERVICES[@]}")
-    verify_anvil
+    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d --wait "${DEV_SERVICES[@]}")
 }
 
 up_fuzzing() {
     echo "[*] Desplegando Fuzzers de Seguridad (Echidna + Medusa)..."
-    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d "${FUZZ_SERVICES[@]}")
-    verify_anvil
+    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d --wait "${FUZZ_SERVICES[@]}")
 }
 
 up_full_docker() {
     echo "[*] Desplegando Infraestructura Docker Completa..."
-    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d)
-    verify_anvil
+    (cd "$BASE_DIR" && docker compose "${DOCKER_ARGS[@]}" up -d --wait)
 }
 
 up_finances() {
