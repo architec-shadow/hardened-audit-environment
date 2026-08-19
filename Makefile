@@ -190,6 +190,13 @@ foundry-init: check-container-$(CONTAINER_FOUNDRY)
 	@docker exec $(INTERACTIVE) $(CONTAINER_FOUNDRY) sh -c \
 		"trap 'chown -R $(CURRENT_UID):$(CURRENT_GID) \"/app$(SUBDIR)\" 2>/dev/null || true' EXIT; mkdir -p \"/app$(SUBDIR)\" && cd \"/app$(SUBDIR)\" && forge init --vscode --force"
 
+# Limpieza de artefactos de Foundry y corrección de permisos bloqueados
+clean-foundry:
+	@echo "[*] Purgando caché y artefactos de Foundry en el proyecto..."
+	@rm -rf ./infrastructure/work_data/work/$(PROYECTO_CLEAN)/contracts/cache
+	@rm -rf ./infrastructure/work_data/work/$(PROYECTO_CLEAN)/contracts/out
+	@echo "[+] Artefactos eliminados correctamente."
+	
 # Envía señal RPC interna para purgar el estado de simulación en Anvil (retorno al bloque 0).
 clean-anvil: check-container-$(CONTAINER_FOUNDRY)
 	@echo "[*] Enviando señal RPC de reseteo a Anvil..."

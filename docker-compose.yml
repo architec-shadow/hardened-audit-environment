@@ -72,7 +72,7 @@ services:
       - no-new-privileges:true
     volumes:
       - ./infrastructure/work_data/work:/workspace:rw
-      - foundry_svm_cache:/home/foundry/.svm # Persistencia de versiones solc
+  #    - foundry_svm_cache:/home/foundry/.svm # Persistencia de versiones solc
     working_dir: /workspace
     entrypoint: ["tail", "-f", "/dev/null"]
     tty: true
