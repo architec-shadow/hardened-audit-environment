@@ -31,6 +31,12 @@ infrastructure/work_data/webconfig/
 infrastructure/vscode_config/
 infrastructure/work_data/work/*
 
+#2.1 Build Artifacts & Dependency Caches (Compiler & Package Managers)
+#Blocks local Rust, Node.js and Solidity compilation caches
+infrastructure/work_data/build_tool_cache/
+**/node_modules/
+**/target/
+
 # 3. Whitelist Structural Integrity
 # Allow tracking of the empty directory tree structural milestones
 !infrastructure/brave_data/.gitkeep

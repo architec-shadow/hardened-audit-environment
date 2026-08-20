@@ -16,7 +16,7 @@ services:
      volumes:
        - ./infrastructure/work_data/work:/workspace:rw
        - ./infrastructure/work_data/vscode_config:/home/openvscode-server/.openvscode-server:rw
-       - ts_node_modules:/workspace/node_modules #sincronizado con el IDE
+       - ./infrastructure/work_data/build_tool_cache/node_modules:/workspace/node_modules:rw #sincronizado con el IDE
      environment:
        - "OPENVSCODE_SERVER_HOST=0.0.0.0"
        - "OPENVSCODE_SERVER_CONNECTION_TOKEN=${TOKEN_PASSWORD:?Error: TOKEN_PASSWORD no definida}"
@@ -72,7 +72,7 @@ services:
       - no-new-privileges:true
     volumes:
       - ./infrastructure/work_data/work:/workspace:rw
-  #    - foundry_svm_cache:/home/foundry/.svm # Persistencia de versiones solc
+      - ./infraestrucute/work_data/build_tool_cache/svm_cache:/home/foundry/.svm:rw # Persistencia de versiones solc
     working_dir: /workspace
     entrypoint: ["tail", "-f", "/dev/null"]
     tty: true
@@ -108,8 +108,8 @@ services:
       - CARGO_TARGET_DIR=/cargo_target
     volumes:
       - ./infrastructure/work_data/work:/workspace:rw
-      - rust_cargo_cache:/cargo_cache
-      - rust_target_cache:/cargo_target
+      - ./infrastructure/work_data/work/build_tool_cache/cargo_cache:/cargo_cache:rw
+      - ./infrestructure/work_data/work/build_tool_cache/cargo_target:/cargo_target:rw
     working_dir: /workspace
     entrypoint: ["tail", "-f", "/dev/null"]
     tty: true
@@ -137,7 +137,7 @@ services:
       - NPM_CONFIG_PREFIX=/tmp/.npm-global
     volumes:
       - ./infrastructure/work_data/work:/workspace:rw
-      - ts_node_modules:/workspace/node_modules
+      - ./infrastructure/work_data/build_tool_cache/node_modules:/workspace/node_modules:rw
     working_dir: /workspace
     entrypoint: ["tail", "-f", "/dev/null"]
     tty: true
@@ -204,9 +204,3 @@ networks:
     driver: bridge
     internal: true
 
-# Volumenes nombrados (Gestionados por Docker)
-volumes:
-  rust_cargo_cache:
-  rust_target_cache:
-  ts_node_modules:
-  foundry_svm_cache:
